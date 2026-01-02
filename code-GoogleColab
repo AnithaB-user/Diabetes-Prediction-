@@ -1,1 +1,75 @@
 
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+import seaborn as sns
+
+dataset = 'https://raw.githubusercontent.com/jbrownlee/Datasets/master/pima-indians-diabetes.data.csv'
+
+column_names = ['Pregnancies', 'Glucose', 'BloodPressure','SkinThickness', 'Insulin', 'BMI', 'DiabetesPedigreeFunction', 'Age', 'Outcome']
+data = pd.read_csv(dataset, names=column_names)
+
+data.head()
+
+data.describe()
+
+data.info()
+
+print(data.isnull().sum())
+
+sns.countplot(x='Outcome',data=data)
+
+sns.distplot(data['Age'].dropna(),kde=True)
+
+data.corr()
+
+x = data.drop('Outcome', axis=1)
+y = data['Outcome']
+
+x_train , x_test , y_train , y_test= train_test_split(x,y, test_size=0.2, random_state=0)
+
+regressor= LogisticRegression()
+regressor.fit(x_train,y_train)
+
+pred= regressor.predict(x_test)
+
+print(classification_report(y_test,pred))
+
+confusion_matrix(y_test,pred)
+
+"""## **Let's check with other models and compare accuracy among those models and which one gives high prediction value:**"""
+
+from sklearn.ensemble import RandomForestClassifier
+from xgboost import XGBClassifier
+
+rf = RandomForestClassifier(n_estimators=100, random_state=42)
+rf.fit(x_train, y_train)
+y_pred_rf = rf.predict(x_test)
+print("Random Forest Accuracy:", accuracy_score(y_test, y_pred_rf))
+print(confusion_matrix(y_test, y_pred_rf))
+print(classification_report(y_test, y_pred_rf))
+
+xgb = XGBClassifier(use_label_encoder=False, eval_metric='logloss')
+xgb.fit(x_train, y_train)
+y_pred_xgb = xgb.predict(x_test)
+print("XGBoost Accuracy:", accuracy_score(y_test, y_pred_xgb))
+print(confusion_matrix(y_test, y_pred_xgb))
+print(classification_report(y_test, y_pred_xgb))
+
+accuracies = {
+    "Logistic Regression": accuracy_score(y_test, pred),
+    "Random Forest": accuracy_score(y_test, y_pred_rf),
+    "XGBoost": accuracy_score(y_test, y_pred_xgb)
+}
+
+print("\nModel Accuracies:")
+for model, acc in accuracies.items():
+    print(f"{model}: {acc * 100:.2f}%")
+
+best_model_name = max(accuracies, key=accuracies.get)
+best_accuracy = accuracies[best_model_name]
+print(f"The best model for diabetes prediction is {best_model_name} with an accuracy of {best_accuracy * 100:.2f}%")
+
+
